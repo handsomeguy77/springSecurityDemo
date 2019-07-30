@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>用户角色管理</title>
+    <link rel="stylesheet" href="../layuiadmin/layui/css/layui.css" media="all">
+    <script type="text/javascript" src="../js/jquery.min.js"></script>
+    <style media="screen">
+        #dv1{
+            margin-top:150px;
+            margin-left: 30px;
+            border:1px solid;
+            height:350px;
+            overflow:auto;
+        }
+        #dv2{
+            margin-top:150px;
+            margin-left:100px;
+            border:1px solid;
+            height:350px;
+            overflow:auto;
+        }
+        .mark{
+            background-color: red;
+        }
+        #dv1 ul{
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-main layui-row">
+    <div class="layui-col-xs3" id="dv1"></div>
+    <div class="layui-col-xs6" id="dv2"></div>
+</div>
+<div style="margin-top:10px;margin-left:900px;"><button class="layui-btn" id="btn">确定</button></div>
+<script id="demo1" type="text/html">
+    <ul>
+        {{#  layui.each(d.list1, function(index, item){ }}
+        <li>{{item.username}}</li>
+        {{# }); }}
+    </ul>
+</script>
+<script id="demo2" type="text/html">
+    <ul>
+        {{#  layui.each(d.list2, function(index, item){ }}
+        <li><input type="checkbox" value={{item.role}}>{{item.role}}</li>
+        {{# }); }}
+    </ul>
+</script>
+<script src="../layuiadmin/layui/layui.js"></script>
+<script>
+    layui.use(['table','form','laytpl'], function(){
+        var table = layui.table,
+            laytpl=layui.laytpl,
+            form = layui.form;
+
+        var data={
+            list1:[{username:"1234"},{username:"4567"},{username:"7891"}],
+            list2:[{role:"admin"},{role:"director"}]
+        }
+
+        $.ajax({                //获取所有的用户名
+            url:"/q/user/getAll",
+            type:"GET",
+            dataType:"json",
+            contentType:'application/json',
+            success:function(res){
+                console.log(res);
+                data.list1=res;
+            }
+        });
+
+        $.ajax({                    //获取所有的url
+            url:"/q/role/getAll",
+            type:"GET",
+            dataType:"json",
+            contentType:'application/json',
+            success:function(res){
+                console.log(res);
+                data.list2=res
+            }
+        });
+
+        setTimeout(function () {
+            var getTpl1 = demo1.innerHTML
+                ,view1 = document.getElementById('dv1');
+            laytpl(getTpl1).render(data, function(html){
+                view1.innerHTML = html;
+            });
+
+            var getTpl2 = demo2.innerHTML
+                ,view2 = document.getElementById('dv2');
+            laytpl(getTpl2).render(data, function(html){
+                view2.innerHTML = html;
+            });
+
+            var username="";          //用于存储角色名
+            $("#dv1 li").click(function(){
+                $(this).siblings().removeClass("mark");
+                $(this).addClass("mark");
+                username="";
+                username=$(this).text();
+            })
+
+            var role=[];            //用于存储所有选中的url
+            $("#btn").click(function(){                 //点击确定按钮
+                if(username==""){
+                    alert("请先选中某个用户!!");
+                }else{
+                    role=[];
+                    $(":checkbox").each(function(){        //遍历所有的复选框
+                        if($(this).prop("checked")==true){
+                            role.push($(this).val());
+                        }
+                    });
+                    var datalist=JSON.stringify({username:username,roleList:role});
+                    $.ajax({
+                        url:"/m/user/updateByUsername",
+                        type:"PUT",
+                        data:datalist,
+                        dataType:"json",
+                        contentType:'application/json',
+                        success:function(res){
+                            console.log(res);
+                            if(res==true){
+                                alert("操作成功！！");
+                            }else{
+                                alert("操作失败！！");
+                            }
+                        }
+                    });
+                }
+            })
+        },1000);
+    });
+</script>
+
+</body>
+</html>

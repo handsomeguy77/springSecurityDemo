@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Url角色管理</title>
+    <link rel="stylesheet" href="../layuiadmin/layui/css/layui.css" media="all">
+    <script type="text/javascript" src="../js/jquery.min.js"></script>
+    <style media="screen">
+        #dv1{
+            margin-top:150px;
+            margin-left: 30px;
+            border:1px solid;
+            height:350px;
+            overflow:auto;
+        }
+        #dv2{
+            margin-top:150px;
+            margin-left:100px;
+            border:1px solid;
+            height:350px;
+            overflow:auto;
+        }
+        .mark{
+            background-color: red;
+        }
+        #dv1 ul{
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-main layui-row">
+    <div class="layui-col-xs3" id="dv1"></div>
+    <div class="layui-col-xs6" id="dv2"></div>
+</div>
+<div style="margin-top:10px;margin-left:900px;"><button class="layui-btn" id="btn">确定</button></div>
+<script id="demo1" type="text/html">
+    <ul>
+        {{#  layui.each(d.list1, function(index, item){ }}
+        <li>{{item.role}}</li>
+        {{# }); }}
+    </ul>
+</script>
+<script id="demo2" type="text/html">
+    <ul>
+        {{#  layui.each(d.list2, function(index, item){ }}
+        <li><input type="checkbox" value={{item.name}}>{{item.name}}</li>
+        {{# }); }}
+    </ul>
+</script>
+<script src="../layuiadmin/layui/layui.js"></script>
+<script>
+    layui.use(['table','form','laytpl'], function(){
+        var table = layui.table,
+            laytpl=layui.laytpl,
+            form = layui.form;
+
+        var data={
+            list1:[{role:"admin"},{role:"student"},{role:"director"}],
+            list2:[{name:"/q/jcsu/xqsj/get"},{name:"/m/jcsu/xqsj/add"}]
+        }
+
+        $.ajax({                //获取所有的角色
+            url:"/q/role/getAll",
+            type:"GET",
+            dataType:"json",
+            contentType:'application/json',
+            success:function(res){
+                console.log(res);
+                data.list1=res;
+            }
+        });
+
+        $.ajax({                    //获取所有的url
+            url:"/q/url/getAll",
+            type:"GET",
+            dataType:"json",
+            contentType:'application/json',
+            success:function(res){
+                console.log(res);
+                data.list2=res
+            }
+        });
+
+        setTimeout(function () {
+            var getTpl1 = demo1.innerHTML
+                ,view1 = document.getElementById('dv1');
+            laytpl(getTpl1).render(data, function(html){
+                view1.innerHTML = html;
+            });
+
+            var getTpl2 = demo2.innerHTML
+                ,view2 = document.getElementById('dv2');
+            laytpl(getTpl2).render(data, function(html){
+                view2.innerHTML = html;
+            });
+
+            var role="";          //用于存储角色名
+            $("#dv1 li").click(function(){
+                $(this).siblings().removeClass("mark");
+                $(this).addClass("mark");
+                role="";
+                role=$(this).text();
+            })
+
+            var gn=[];            //用于存储所有选中的url
+            $("#btn").click(function(){                 //点击确定按钮
+                if(role==""){
+                    alert("请先选中某个角色!!");
+                }else{
+                    gn=[];
+                    $(":checkbox").each(function(){        //遍历所有的复选框
+                        if($(this).prop("checked")==true){
+                            var url=JSON.stringify({name:$(this).val()});
+                            var checkbox=$(this).val();        //存放复选框的value值
+                            $.ajax({
+                                url:"/q/url/getByUrl",
+                                type:"POST",
+                                data:url,
+                                dataType:"json",
+                                contentType:'application/json',
+                                success:function(res){
+                                    if(res[0].roles==null){
+                                        var dateList_1=JSON.stringify({name:checkbox,roles:role});
+                                        $.ajax({
+                                            url:"/m/url/updateByUrl",
+                                            type:"PUT",
+                                            data:dateList_1,
+                                            dataType:"json",
+                                            contentType:'application/json',
+                                            success:function(res_1){
+                                                if(res_1==true){
+                                                    alert("成功！！");
+                                                }else{
+                                                    alert("失败！！");
+                                                }
+                                            }
+                                        });
+                                    }else{
+                                        var str=res[0].roles+","+role;          //进行role的拼接，如：admin,director
+                                        var dataList_2=JSON.stringify({name:checkbox,roles:str})
+                                        $.ajax({
+                                            url:"/m/url/updateByUrl",
+                                            type:"PUT",
+                                            data:dataList_2,
+                                            dataType:"json",
+                                            contentType:'application/json',
+                                            success:function(res_2){
+                                                if(res_2==true){
+                                                    alert("成功！！");
+                                                }else{
+                                                    alert("失败！！");
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            })
+        },1000);
+    });
+</script>
+
+</body>
+</html>
